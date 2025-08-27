@@ -1,0 +1,566 @@
+-- 1) Create tables without constraints
+CREATE TABLE Member (
+    Member_Id        NUMBER(5),
+    Member_Name      VARCHAR2(30),
+    Member_Address   VARCHAR2(50),
+    Acc_Open_Date    DATE,
+    Membership_Type  VARCHAR2(20),
+    Fees_Paid        NUMBER(4),
+    Max_Books_Allowed NUMBER(2),
+    Penalty_Amount   NUMBER(7,2)
+);
+
+CREATE TABLE Books (
+    Book_No     NUMBER(6),
+    Book_Name   VARCHAR2(30),
+    Author_Name VARCHAR2(30),
+    Cost        NUMBER(7,2),
+    Category    CHAR(10)
+);
+
+CREATE TABLE Issue (
+    Lib_Issue_Id NUMBER(10),
+    Book_No      NUMBER(6),
+    Member_Id    NUMBER(5),
+    Issue_Date   DATE,
+    Return_Date  DATE
+);
+
+-------------------------------------------------
+-- 2) View structure
+DESC Member;
+DESC Books;
+DESC Issue;
+
+-------------------------------------------------
+-- 3) Drop Member table
+DROP TABLE Member;
+
+-------------------------------------------------
+-- 4) Recreate Member with constraints
+CREATE TABLE Member (
+    Member_Id NUMBER(5) PRIMARY KEY,
+    Member_Name VARCHAR2(30),
+    Member_Address VARCHAR2(50),
+    Acc_Open_Date DATE,
+    Membership_Type VARCHAR2(20)
+       CHECK (Membership_Type IN ('Lifetime','Annual','Half Yearly','Quarterly')),
+    Fees_Paid NUMBER(4),
+    Max_Books_Allowed NUMBER(2),
+    Penalty_Amount NUMBER(7,2)
+);
+
+-------------------------------------------------
+-- 5) Modify width of Member_Name to 30
+ALTER TABLE Member MODIFY (Member_Name VARCHAR2(30));
+
+-------------------------------------------------
+-- 6) Add column Reference to Issue
+ALTER TABLE Issue ADD Reference CHAR(30);
+
+-------------------------------------------------
+-- 7) Drop Reference column
+ALTER TABLE Issue DROP COLUMN Reference;
+
+-------------------------------------------------
+-- 8) Rename Issue table to Lib_Issue
+RENAME Issue TO Lib_Issue;
+
+-------------------------------------------------
+-- 9) Insert given data
+INSERT INTO Member VALUES (1,'Richa Sharma','Pune',TO_DATE('10-DEC-2005','DD-MON-YYYY'),'Lifetime',25000,5,50);
+INSERT INTO Member VALUES (2,'Garima Sen','Pune',SYSDATE,'Annual',1000,3,NULL);
+
+-------------------------------------------------
+-- 10) Insert 5 more records
+INSERT INTO Member VALUES (3,'Amit Verma','Delhi',TO_DATE('15-MAY-2006','DD-MON-YYYY'),'Half Yearly',500,4,100);
+INSERT INTO Member VALUES (4,'Suresh Iyer','Mumbai',TO_DATE('20-JAN-2007','DD-MON-YYYY'),'Quarterly',300,2,0);
+INSERT INTO Member VALUES (5,'Neha Gupta','Chennai',TO_DATE('10-MAR-2007','DD-MON-YYYY'),'Annual',1200,3,75);
+INSERT INTO Member VALUES (6,'Vikas Kumar','Nagpur',TO_DATE('25-JUN-2006','DD-MON-YYYY'),'Lifetime',5000,6,0);
+INSERT INTO Member VALUES (7,'Meena Rao','Hyderabad',TO_DATE('05-APR-2006','DD-MON-YYYY'),'Half Yearly',600,4,200);
+
+-------------------------------------------------
+-- 11) Try decreasing width to 20 (error if data >20 chars)
+ALTER TABLE Member MODIFY (Member_Name VARCHAR2(20));
+
+
+-------------------------------------------------
+-- 12) Insert invalid record (Max_Books=110 → violates constraint later)
+-- Will throw error
+
+-------------------------------------------------
+-- 13) Create Member101 from Member
+CREATE TABLE Member101 AS SELECT * FROM Member;
+
+-------------------------------------------------
+-- 14) Add constraints to Member
+ALTER TABLE Member ADD CONSTRAINT max_books_chk CHECK (Max_Books_Allowed < 100);
+ALTER TABLE Member ADD CONSTRAINT penalty_chk CHECK (Penalty_Amount <= 1000);
+
+-------------------------------------------------
+-- 15) Drop Books table
+DROP TABLE Books;
+
+-------------------------------------------------
+-- 16) Recreate Books with constraints
+CREATE TABLE Books (
+    Book_No NUMBER(6) PRIMARY KEY,
+    Book_Name VARCHAR2(30) NOT NULL,
+    Author_Name VARCHAR2(30),
+    Cost NUMBER(7,2),
+    Category VARCHAR2(20)
+       CHECK (Category IN ('Science','Fiction','Database','RDBMS','Others'))
+);
+
+-------------------------------------------------
+-- 17) Insert given book data
+INSERT INTO Books VALUES (101,'Let us C','Denis Ritchie',450,'Others');
+INSERT INTO Books VALUES (102,'Oracle – Complete Ref','Loni',550,'Database');
+INSERT INTO Books VALUES (103,'Mastering SQL','Loni',250,'Database');
+INSERT INTO Books VALUES (104,'PL SQL-Ref','Scott Urman',750,'Database');
+
+-------------------------------------------------
+-- 18) Insert using & operator
+INSERT INTO Books VALUES (&Book_No,&Book_Name,&Author_Name,&Cost,&Category);
+
+-------------------------------------------------
+-- 19) Create Book101 with same structure but no data
+CREATE TABLE Book101 AS SELECT * FROM Books WHERE 1=0;
+
+-------------------------------------------------
+-- 20) Insert all data from Books → Book101
+INSERT INTO Book101 SELECT * FROM Books;
+
+-------------------------------------------------
+-- 21) Save data
+COMMIT;
+
+-------------------------------------------------
+-- 22) View tables
+SELECT * FROM Member;
+SELECT * FROM Books;
+SELECT * FROM Book101;
+
+-------------------------------------------------
+-- 23) Insert National Geographic
+INSERT INTO Books VALUES (105,'National Geographic','Adis Scott',1000,'Science');
+
+-------------------------------------------------
+-- 24) Rollback last change
+ROLLBACK;
+
+-------------------------------------------------
+-- 25) Update Book 103
+UPDATE Books SET Cost=300, Category='RDBMS' WHERE Book_No=103;
+
+-------------------------------------------------
+-- 26) Rename Lib_Issue to Issue
+RENAME Lib_Issue TO Issue;
+
+-------------------------------------------------
+-- 27) Drop Issue
+DROP TABLE Issue;
+
+-------------------------------------------------
+-- 28) Recreate Issue with constraints
+CREATE TABLE Issue (
+    Lib_Issue_Id NUMBER(10) PRIMARY KEY,
+    Book_No NUMBER(6) REFERENCES Books(Book_No),
+    Member_Id NUMBER(5) REFERENCES Member(Member_Id),
+    Issue_Date DATE,
+    Return_Date DATE,
+    CONSTRAINT chk_dates CHECK (Return_Date IS NULL OR Issue_Date < Return_Date)
+);
+
+-------------------------------------------------
+-- 29) Insert given Issue data
+INSERT INTO Issue VALUES (7001,101,1,TO_DATE('10-DEC-2006','DD-MON-YYYY'),NULL);
+INSERT INTO Issue VALUES (7002,102,2,TO_DATE('25-DEC-2006','DD-MON-YYYY'),NULL);
+INSERT INTO Issue VALUES (7003,104,1,TO_DATE('15-JAN-2006','DD-MON-YYYY'),NULL);
+INSERT INTO Issue VALUES (7004,101,1,TO_DATE('04-JUL-2006','DD-MON-YYYY'),NULL);
+INSERT INTO Issue VALUES (7005,104,2,TO_DATE('15-NOV-2006','DD-MON-YYYY'),NULL);
+INSERT INTO Issue VALUES (7006,101,3,TO_DATE('18-FEB-2006','DD-MON-YYYY'),NULL);
+
+-------------------------------------------------
+-- 30) Save
+COMMIT;
+
+-------------------------------------------------
+-- 31) Disable constraints
+ALTER TABLE Issue DISABLE CONSTRAINT chk_dates;
+
+-------------------------------------------------
+-- 32) Insert invalid Issue (member_id not exists)
+INSERT INTO Issue VALUES (7007,102,99,TO_DATE('20-FEB-2007','DD-MON-YYYY'),NULL);
+
+-------------------------------------------------
+-- 33) Enable constraints → error
+ALTER TABLE Issue ENABLE CONSTRAINT chk_dates;
+
+-------------------------------------------------
+-- 34) Delete invalid row
+DELETE FROM Issue WHERE Lib_Issue_Id=7007;
+
+-------------------------------------------------
+-- 35) Try deleting Member ID=1 → error (child rows exist)
+DELETE FROM Member WHERE Member_Id=1;
+
+-------------------------------------------------
+-- 36) Update Return_Date of 7004,7005
+UPDATE Issue SET Return_Date = Issue_Date + 15 WHERE Lib_Issue_Id IN (7004,7005);
+
+-------------------------------------------------
+-- 37) Update penalty of Garima Sen
+UPDATE Member SET Penalty_Amount=100 WHERE Member_Name='Garima Sen';
+
+-------------------------------------------------
+-- 38) Savepoint
+SAVEPOINT X;
+
+-------------------------------------------------
+-- 39) Delete Issues for Member=1 before 10-Dec-2006
+DELETE FROM Issue WHERE Member_Id=1 AND Issue_Date < TO_DATE('10-DEC-2006','DD-MON-YYYY');
+
+-------------------------------------------------
+-- 40) Delete Books not Database/RDBMS
+DELETE FROM Books WHERE Category NOT IN ('Database','RDBMS');
+
+-------------------------------------------------
+-- 41) Rollback to Savepoint
+ROLLBACK TO X;
+
+-------------------------------------------------
+-- 42) Commit
+COMMIT;
+
+-------------------------------------------------
+-- 43, 44) Drop Member101 and Book101
+DROP TABLE Member101;
+DROP TABLE Book101;
+
+-------------------------------------------------
+-- 45) View data
+SELECT * FROM Member;
+SELECT * FROM Books;
+SELECT * FROM Issue;
+
+-------------------------------------------------
+-- 46) Create sequence even numbers
+CREATE SEQUENCE no_seq START WITH 100 INCREMENT BY 2 MAXVALUE 200;
+
+-------------------------------------------------
+-- 47) Drop sequence
+DROP SEQUENCE no_seq;
+
+-------------------------------------------------
+-- 48,49) Sequences
+CREATE SEQUENCE book_seq START WITH 101 INCREMENT BY 1 MAXVALUE 1000 NOCYCLE;
+CREATE SEQUENCE member_seq START WITH 1 INCREMENT BY 1 MAXVALUE 100 NOCYCLE;
+
+-------------------------------------------------
+-- 50) Drop sequences
+DROP SEQUENCE book_seq;
+DROP SEQUENCE member_seq;
+
+--------------------------------------------------------------------------DAY 3------------------------------------------------------------------------
+-------------------------------------------------
+-- 1) Categories and count of books in each
+SELECT Category, COUNT(*) AS total_books
+FROM Books
+GROUP BY Category;
+
+-------------------------------------------------
+-- 2) Book_No and number of times issued (desc)
+SELECT Book_No, COUNT(*) AS issue_count
+FROM Issue
+GROUP BY Book_No
+ORDER BY issue_count DESC;
+
+-------------------------------------------------
+-- 3) Max, Min, Total, Avg Penalty
+SELECT MAX(Penalty_Amount) AS max_penalty,
+       MIN(Penalty_Amount) AS min_penalty,
+       SUM(Penalty_Amount) AS total_penalty,
+       AVG(Penalty_Amount) AS avg_penalty
+FROM Member;
+
+-------------------------------------------------
+-- 4) Members who issued > 2 books
+SELECT Member_Id, COUNT(*) AS books_issued
+FROM Issue
+GROUP BY Member_Id
+HAVING COUNT(*) > 2;
+
+-------------------------------------------------
+-- 5) Member & Book issued multiple times
+SELECT Member_Id, Book_No, COUNT(*) AS issue_count
+FROM Issue
+GROUP BY Member_Id, Book_No
+HAVING COUNT(*) > 1
+ORDER BY issue_count DESC;
+
+-------------------------------------------------
+-- 6) Books issued per month (desc)
+SELECT TO_CHAR(Issue_Date,'Month') AS month_name,
+       COUNT(*) AS books_issued
+FROM Issue
+GROUP BY TO_CHAR(Issue_Date,'Month')
+ORDER BY books_issued DESC;
+
+-------------------------------------------------
+-- 7) Books never issued
+SELECT Book_No, Book_Name
+FROM Books
+WHERE Book_No NOT IN (SELECT DISTINCT Book_No FROM Issue);
+
+-------------------------------------------------
+-- 8) Members that exist and issued at least 1 book
+SELECT DISTINCT m.Member_Id, m.Member_Name
+FROM Member m
+JOIN Issue i ON m.Member_Id = i.Member_Id;
+
+-------------------------------------------------
+-- 9) Member with highest & lowest books issued
+SELECT Member_Id, COUNT(*) AS books_issued
+FROM Issue
+GROUP BY Member_Id
+HAVING COUNT(*) = (SELECT MAX(COUNT(*)) FROM Issue GROUP BY Member_Id)
+   OR COUNT(*) = (SELECT MIN(COUNT(*)) FROM Issue GROUP BY Member_Id);
+
+-------------------------------------------------
+-- 10) Issues in December and July (no operators)
+SELECT * FROM Issue
+WHERE TO_CHAR(Issue_Date,'MON') IN ('DEC','JUL');
+
+-------------------------------------------------
+-- 11) Database books issued in December
+SELECT i.Book_No, b.Book_Name, i.Issue_Date
+FROM Issue i JOIN Books b ON i.Book_No=b.Book_No
+WHERE b.Category='Database'
+  AND TO_CHAR(i.Issue_Date,'MON')='DEC';
+
+-------------------------------------------------
+-- 12) Member with count of books issued (desc)
+SELECT m.Member_Id, m.Member_Name, COUNT(i.Book_No) AS books_issued
+FROM Member m JOIN Issue i ON m.Member_Id=i.Member_Id
+GROUP BY m.Member_Id, m.Member_Name
+ORDER BY books_issued DESC;
+
+-------------------------------------------------
+-- 13) Books issued by Richa Sharma
+SELECT i.Book_No, b.Book_Name, i.Issue_Date, i.Return_Date
+FROM Issue i JOIN Books b ON i.Book_No=b.Book_No
+JOIN Member m ON m.Member_Id=i.Member_Id
+WHERE m.Member_Name='Richa Sharma';
+
+-------------------------------------------------
+-- 14) Members who issued Database books
+SELECT DISTINCT m.*
+FROM Member m
+JOIN Issue i ON m.Member_Id=i.Member_Id
+JOIN Books b ON b.Book_No=i.Book_No
+WHERE b.Category='Database';
+
+-------------------------------------------------
+-- 15) Books with highest price in each category
+SELECT b.Book_No, b.Book_Name, b.Category, b.Cost
+FROM Books b
+WHERE b.Cost = (SELECT MAX(Cost) FROM Books WHERE Category=b.Category);
+
+-------------------------------------------------
+-- 16) Issues not within member’s join & return dates
+SELECT i.*
+FROM Issue i
+JOIN Member m ON i.Member_Id=m.Member_Id
+WHERE (i.Issue_Date < m.Acc_Open_Date)
+   OR (i.Return_Date IS NOT NULL AND i.Return_Date < m.Acc_Open_Date);
+
+-------------------------------------------------
+-- 17) Members with no books issued
+SELECT m.*
+FROM Member m
+WHERE m.Member_Id NOT IN (SELECT DISTINCT Member_Id FROM Issue);
+
+-------------------------------------------------
+-- 18) Members exceeding max_books_allowed
+SELECT m.Member_Id, m.Member_Name, COUNT(i.Book_No) AS issued, m.Max_Books_Allowed
+FROM Member m JOIN Issue i ON m.Member_Id=i.Member_Id
+GROUP BY m.Member_Id, m.Member_Name, m.Max_Books_Allowed
+HAVING COUNT(i.Book_No) > m.Max_Books_Allowed;
+
+-------------------------------------------------
+-- 19) Members who issued same book as Garima
+SELECT DISTINCT m.Member_Id, m.Member_Name
+FROM Member m JOIN Issue i ON m.Member_Id=i.Member_Id
+WHERE i.Book_No IN (SELECT Book_No FROM Issue i2 JOIN Member m2
+                    ON i2.Member_Id=m2.Member_Id
+                    WHERE m2.Member_Name='Garima Sen');
+
+-------------------------------------------------
+-- 20) Books not returned > 30 days
+SELECT b.Book_Name, b.Cost
+FROM Books b JOIN Issue i ON b.Book_No=i.Book_No
+WHERE i.Return_Date IS NULL
+  AND (SYSDATE - i.Issue_Date) > 30;
+
+-------------------------------------------------
+-- 21) Authors with more than 1 book
+SELECT Author_Name, COUNT(*) AS total_books
+FROM Books
+GROUP BY Author_Name
+HAVING COUNT(*) > 1;
+
+-------------------------------------------------
+-- 22) Member with highest & lowest books issued
+SELECT m.Member_Id, m.Member_Name, COUNT(i.Book_No) AS books_issued
+FROM Member m JOIN Issue i ON m.Member_Id=i.Member_Id
+GROUP BY m.Member_Id, m.Member_Name
+HAVING COUNT(i.Book_No) = (SELECT MAX(COUNT(*)) FROM Issue GROUP BY Member_Id)
+    OR COUNT(i.Book_No) = (SELECT MIN(COUNT(*)) FROM Issue GROUP BY Member_Id);
+
+-------------------------------------------------
+-- 23) Highest 3 priced books
+SELECT * FROM (
+    SELECT * FROM Books ORDER BY Cost DESC
+) WHERE ROWNUM <= 3;
+
+-------------------------------------------------
+-- 24) Total cost of currently issued but not returned
+SELECT SUM(b.Cost) AS total_cost
+FROM Books b JOIN Issue i ON b.Book_No=i.Book_No
+WHERE i.Return_Date IS NULL;
+
+-------------------------------------------------
+-- 25) Book issued max times
+SELECT Book_No, COUNT(*) AS issue_count
+FROM Issue
+GROUP BY Book_No
+HAVING COUNT(*) = (SELECT MAX(COUNT(*)) FROM Issue GROUP BY Book_No);
+
+-------------------------------------------------
+-- 26) Books issued to lifetime members
+SELECT COUNT(*) AS total_books
+FROM Issue i JOIN Member m ON i.Member_Id=m.Member_Id
+WHERE m.Membership_Type='Lifetime';
+
+-------------------------------------------------
+-- 27) Member type & count
+SELECT Membership_Type, COUNT(*) AS total_members
+FROM Member
+GROUP BY Membership_Type;
+
+-------------------------------------------------
+-- 28) Top 5 members by books issued
+SELECT m.Member_Id, m.Member_Name, m.Membership_Type, COUNT(i.Book_No) AS books_issued
+FROM Member m JOIN Issue i ON m.Member_Id=i.Member_Id
+GROUP BY m.Member_Id, m.Member_Name, m.Membership_Type
+ORDER BY books_issued DESC
+FETCH FIRST 5 ROWS ONLY;
+
+-------------------------------------------------
+-- 29) Top 3 members per membership type
+SELECT *
+FROM (
+  SELECT m.Member_Id, m.Member_Name, m.Membership_Type,
+         COUNT(i.Book_No) AS books_issued,
+         RANK() OVER (PARTITION BY m.Membership_Type ORDER BY COUNT(i.Book_No) DESC) AS rnk
+  FROM Member m JOIN Issue i ON m.Member_Id=i.Member_Id
+  GROUP BY m.Member_Id, m.Member_Name, m.Membership_Type
+) WHERE rnk <= 3;
+
+-------------------------------------------------
+-- 30) First 5 members joined
+SELECT *
+FROM Member
+ORDER BY Acc_Open_Date
+FETCH FIRST 5 ROWS ONLY;
+
+-------------------------------------------------
+-- 31) Members issued books in December
+SELECT DISTINCT m.Member_Id, m.Member_Name, m.Membership_Type
+FROM Member m JOIN Issue i ON m.Member_Id=i.Member_Id
+WHERE TO_CHAR(i.Issue_Date,'MM')='12';
+
+-------------------------------------------------
+-- 32) Members who haven’t returned books yet
+SELECT DISTINCT m.Member_Id, m.Member_Name
+FROM Member m JOIN Issue i ON m.Member_Id=i.Member_Id
+WHERE i.Return_Date IS NULL;
+
+-------------------------------------------------
+-- 33) Members joined same date as Garima
+SELECT *
+FROM Member
+WHERE Acc_Open_Date = (SELECT Acc_Open_Date FROM Member WHERE Member_Name='Garima Sen');
+
+-------------------------------------------------
+-- 34) Members who issued Loni’s books in December
+SELECT DISTINCT m.Member_Name
+FROM Member m
+JOIN Issue i ON m.Member_Id=i.Member_Id
+JOIN Books b ON b.Book_No=i.Book_No
+WHERE b.Author_Name='Loni' AND TO_CHAR(i.Issue_Date,'MM')='12';
+
+-------------------------------------------------
+-- 35) Authors least issued by Lifetime members
+SELECT b.Author_Name, COUNT(*) AS issue_count
+FROM Books b
+JOIN Issue i ON b.Book_No=i.Book_No
+JOIN Member m ON m.Member_Id=i.Member_Id
+WHERE m.Membership_Type='Lifetime'
+GROUP BY b.Author_Name
+HAVING COUNT(*) = (SELECT MIN(COUNT(*)) 
+                   FROM Books bb JOIN Issue ii ON bb.Book_No=ii.Book_No
+                   JOIN Member mm ON mm.Member_Id=ii.Member_Id
+                   WHERE mm.Membership_Type='Lifetime'
+                   GROUP BY bb.Author_Name);
+
+-------------------------------------------------
+-- 36) Top 3 authors by Half Yearly members
+SELECT *
+FROM (
+  SELECT b.Author_Name, COUNT(*) AS issue_count
+  FROM Books b JOIN Issue i ON b.Book_No=i.Book_No
+  JOIN Member m ON m.Member_Id=i.Member_Id
+  WHERE m.Membership_Type='Half Yearly'
+  GROUP BY b.Author_Name
+  ORDER BY issue_count DESC
+) WHERE ROWNUM <= 3;
+
+-------------------------------------------------
+-- 37) Top 5 books issued by Annual members
+SELECT *
+FROM (
+  SELECT b.Book_Name, COUNT(*) AS issue_count
+  FROM Books b JOIN Issue i ON b.Book_No=i.Book_No
+  JOIN Member m ON m.Member_Id=i.Member_Id
+  WHERE m.Membership_Type='Annual'
+  GROUP BY b.Book_Name
+  ORDER BY issue_count DESC
+) WHERE ROWNUM <= 5;
+
+-------------------------------------------------
+-- 38) Members issued Scott Urman books >300
+SELECT DISTINCT m.Member_Name
+FROM Member m
+JOIN Issue i ON m.Member_Id=i.Member_Id
+JOIN Books b ON b.Book_No=i.Book_No
+WHERE b.Cost > 300 AND b.Author_Name='Scott Urman';
+
+-------------------------------------------------
+-- 39) Count books issued by each member type & category
+SELECT m.Membership_Type, b.Category, COUNT(*) AS issue_count
+FROM Member m
+JOIN Issue i ON m.Member_Id=i.Member_Id
+JOIN Books b ON b.Book_No=i.Book_No
+GROUP BY m.Membership_Type, b.Category;
+
+-------------------------------------------------
+-- 40) Lifetime members joined in 2006 & issued only 1 book
+SELECT m.Member_Id, m.Member_Name
+FROM Member m
+JOIN Issue i ON m.Member_Id=i.Member_Id
+WHERE m.Membership_Type='Lifetime'
+  AND EXTRACT(YEAR FROM m.Acc_Open_Date)=2006
+GROUP BY m.Member_Id, m.Member_Name
+HAVING COUNT(i.Book_No)=1;
