@@ -1,0 +1,103 @@
+import java.util.*;
+
+class EnterpriseTest {
+    public static void main(String[] args) {
+        AiStartup startup = new AiStartup(101, "PixieCollab AI");
+        Employee ceo = new Employee("Mahesh", 1);
+        Employee[] team = {
+                new Employee("Ashok", 2),
+                new Employee("Om", 3),
+                new Employee("Navneet", 4)
+        };
+        Money investment = new Money("Bank Transfer", "INR", 500000);
+        Computer computer = new Computer("MacBook Pro", "M3 Chip");
+        Product product = startup.makeProduct(investment, ceo, team, computer);
+        product.showProductDetails();
+        startup.genRevenue(product, 200000);
+    }
+}
+
+class Enterprise {
+    int enterpriseId;
+    String enterpriseName;
+    Enterprise(int id, String name) {
+        this.enterpriseId = id;
+        this.enterpriseName = name;
+    }
+}
+
+class Employee {
+    String empName;
+    int empId;
+
+    Employee(String name, int id) {
+        empName = name;
+        empId = id;
+    }
+    public String toString() {
+        return empName + " (ID: " + empId + ")";
+    }
+}
+
+class Money {
+    String modeOfTransaction;
+    String currency;
+    double amount;
+
+    Money(String mode, String curr, double amt) {
+        modeOfTransaction = mode;
+        currency = curr;
+        amount = amt;
+    }
+}
+
+class Computer {
+    String brand;
+    String specs;
+
+    Computer(String a, String b) {
+        brand = a;
+        specs = b;
+    }
+}
+
+class Product {
+    String productCategory;
+    String productStatus;
+
+    Product(String category, String status) {
+        productCategory = category;
+        productStatus = status;
+    }
+    void showProductDetails() {
+        System.out.println("Product Category : " + productCategory);
+        System.out.println("Product Status   : " + productStatus);
+    }
+}
+
+class AiStartup extends Enterprise {
+    Employee CEO;
+    double revenue=0.0;
+
+    AiStartup(int id, String name) {
+        super(id, name);
+    }
+
+    Product makeProduct(Money invested, Employee ceo, Employee emps[], Computer comp) {
+        this.CEO = ceo;
+        System.out.println("AI Startup: " + enterpriseName + " is creating a product...");
+        System.out.println("CEO: " + ceo);
+        System.out.println("Employees: " + Arrays.toString(emps));
+        System.out.println("Investment: " + invested.amount + " " + invested.currency
+                + " via " + invested.modeOfTransaction);
+        System.out.println("Using Computer: " + comp.brand + " with " + comp.specs);
+
+        return new Product("AI Collaboration Tool", "In Development");
+    }
+
+    void genRevenue(Product p, double earned) {
+        revenue += earned;
+        System.out.println("Product '" + p.productCategory + "' generated revenue: " + earned + " Rs.");
+        System.out.println("Total Startup Revenue: " + revenue + " Rs.");
+    }
+}
